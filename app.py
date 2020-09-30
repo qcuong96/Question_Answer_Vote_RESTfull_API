@@ -41,6 +41,20 @@ def login():
     return 'Wrong password!'
 
 
+# Delete user
+@app.route('/user/<id>', methods=['DELETE'])
+def delete_question(id):
+    user = User.query.get(id)
+
+    user.delete()
+    try:
+        db.session.commit()
+    except:
+        return 'Error! Please contact the admin!'
+
+    return 'User is deleted'
+
+
 # Create question
 @app.route('/question', methods=['POST'])
 def create_question():
@@ -222,7 +236,7 @@ def up_vote_answer(ans_id):
     user_id = request.json['user_id']
 
     user = User.query.get(user_id)
-    answer = Question.query.get(ans_id)
+    answer = Answer.query.get(ans_id)
     is_up_vote = user_up_vote_answer.query.filter_by(
         user_id=user_id, answer_id=ans_id).first()
 
@@ -271,9 +285,9 @@ def down_vote_answer(ans_id):
 def delete_answer(ans_id):
     user_id = request.json['user_id']
 
-    answer = Question.query.get(ans_id)
+    answer = Answer.query.get(ans_id)
 
-    if question.user_id != user_id:
+    if answer.user_id != user_id:
         return 'You are not the owner of this Answer!'
 
     answer.delete()
@@ -299,6 +313,20 @@ def create_tag():
         return 'Tag have already existed!'
 
     return tag_schema.jsonify(new_tag)
+
+
+# Delete tag
+@app.route('/tag/<id>', methods=['DELETE'])
+def delete_tag(id):
+    tag = Tag.query.get(id)
+
+    tag.delete()
+    try:
+        db.session.commit()
+    except:
+        return 'Error! Please contact the admin!'
+
+    return 'Tage is deleted'
 
 
 # Add tags into question
