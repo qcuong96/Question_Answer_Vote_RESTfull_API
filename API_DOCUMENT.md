@@ -154,6 +154,11 @@ This endpoint all about question control
 ## 5) [PUT] /question/[question_id]/up_vote
     Use to vote/disvote up vote
 
+    Body:
+    {
+        "user_id":"", <Hex uuid string>
+    }
+
     Return:
         1) Success
         {
@@ -174,6 +179,11 @@ This endpoint all about question control
 
 ## 6) [PUT] /question/[question_id]/down_vote
     Use to vote/disvote down vote
+
+    Body:
+    {
+        "user_id":"", <Hex uuid string>
+    }
 
     Return:
         1) Success
@@ -334,6 +344,11 @@ This endpoint all about answer control
 ## 3) [PUT] /answer/[answer_id]/up_vote
     Use to vote/disvote up vote
 
+    Body:
+    {
+        "user_id":"", <Hex uuid string>
+    }
+
     Return:
         1) Success
         {
@@ -354,6 +369,11 @@ This endpoint all about answer control
 
 ## 4) [PUT] /answer/[answer_id]/down_vote
     Use to vote/disvote down vote
+    
+    Body:
+    {
+        "user_id":"", <Hex uuid string>
+    }
 
     Return:
         1) Success
