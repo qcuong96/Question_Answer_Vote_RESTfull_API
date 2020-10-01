@@ -16,3 +16,4 @@ app.config['SQLACHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 # Init mallow
 ma = Marshmallow(app)
+

@@ -35,6 +35,9 @@ def login():
 
     user = User.query.filter_by(user_name=name).first()
 
+    if user.is_deleted:
+        return 'This user was delete, please contact the admin!'
+
     if user.user_password == password:
         return user_schema.jsonify(user)
 
@@ -43,7 +46,7 @@ def login():
 
 # Delete user
 @app.route('/user/<id>', methods=['DELETE'])
-def delete_question(id):
+def delete_user(id):
     user = User.query.get(id)
 
     user.delete()
@@ -52,7 +55,7 @@ def delete_question(id):
     except:
         return 'Error! Please contact the admin!'
 
-    return 'User is deleted'
+    return 'User was deleted'
 
 
 # Create question
@@ -68,13 +71,19 @@ def create_question():
 
     question = Question(content, user_id)
 
+    try:
+        db.session.add(question)
+        db.session.commit()
+    except:
+        return 'Error! Fail to create question!'
+
     return question_schema.jsonify(question)
 
 
 # Get all questions
 @app.route('/question/all', methods=['GET'])
 def get_all_questions():
-    questions = Question.query.all()
+    questions = Question.query.filter_by(is_deleted=False)
     result = questions_schema.dump(questions)
 
     return jsonify(result)
@@ -84,6 +93,9 @@ def get_all_questions():
 @app.route('/question/<id>', methods=['GET'])
 def get_question(id):
     question = Question.query.get(id)
+
+    if question.is_deleted:
+        return 'This question was deleted!'
 
     return question_schema.jsonify(question)
 
@@ -98,6 +110,12 @@ def edit_question(id):
 
     if question.user_id != user_id:
         return 'You are not the owner of this question!'
+
+    if question.is_deleted:
+        return 'This question was deleted!'
+
+    if question.is_closed:
+        return 'This question was closed!'
 
     question.edit(content)
     try:
@@ -115,16 +133,19 @@ def up_vote_question(id):
 
     user = User.query.get(user_id)
     question = Question.query.get(id)
-    is_up_vote = user_up_vote_question.query.filter_by(
-        user_id=user_id, question_id=id).first()
+    up_vote_users = question.up_vote_users.all()
+    down_vote_users = question.down_vote_users.all()
 
     try:
-        if is_up_vote:
+        if user in up_vote_users:
             question.dis_vote_up()
             question.up_vote_users.remove(user)
         else:
-            question.up_vote()
+            question.vote_up()
             question.up_vote_users.append(user)
+            if user in down_vote_users:
+                question.dis_vote_down()
+                question.down_vote_users.remove(user)
 
         db.session.commit()
     except:
@@ -140,22 +161,44 @@ def down_vote_question(id):
 
     user = User.query.get(user_id)
     question = Question.query.get(id)
-    is_down_vote = user_down_vote_question.query.filter_by(
-        user_id=user_id, question_id=id).first()
+    up_vote_users = question.up_vote_users.all()
+    down_vote_users = question.down_vote_users.all()
 
     try:
-        if is_down_vote:
+        if user in down_vote_users:
             question.dis_vote_down()
             question.down_vote_users.remove(user)
         else:
-            question.down_vote()
+            question.vote_down()
             question.down_vote_users.append(user)
+            if user in up_vote_users:
+                question.dis_vote_up()
+                question.up_vote_users.remove(user)
 
         db.session.commit()
     except:
         return 'Error! Please contact the admin!'
 
     return question_schema.jsonify(question)
+
+
+# Close question
+@app.route('/question/<id>/close', methods=['DELETE'])
+def close_question(id):
+    user_id = request.json['user_id']
+
+    question = Question.query.get(id)
+
+    if question.user_id != user_id:
+        return 'You are not the owner of this question!'
+
+    question.close()
+    try:
+        db.session.commit()
+    except:
+        return 'Error! Please contact the admin!'
+
+    return 'Question is closed'
 
 
 # Delete question
@@ -184,11 +227,24 @@ def create_answer(id):
     content = request.json['content']
 
     user = User.query.filter_by(user_id=user_id).first()
+    question = Question.query.get(id)
+
+    if question.is_deleted:
+        return 'This question was deleted!'
+
+    if question.is_closed:
+        return 'This question was closed!'
 
     if not user:
         return 'This account have been not registed!'
 
     answer = Answer(content, user_id, id)
+
+    try:
+        db.session.add(answer)
+        db.session.commit()
+    except:
+        return 'Error! Fail to create answer!'
 
     return answer_schema.jsonify(answer)
 
@@ -196,7 +252,7 @@ def create_answer(id):
 # Get all answers of the question
 @app.route('/question/<id>/answers', methods=['GET'])
 def get_all_answers(id):
-    answer = Answer.query.filter_by(question_id=id)
+    answer = Answer.query.filter_by(question_id=id, is_deleted=False)
     result = answers_schema.dump(answer)
 
     return jsonify(result)
@@ -207,7 +263,10 @@ def get_all_answers(id):
 def get_answer(ans_id):
     answer = Answer.query.get(ans_id)
 
-    return question_schema.jsonify(answer)
+    if answer.is_deleted:
+        return 'This answer was delete!'
+
+    return answer_schema.jsonify(answer)
 
 
 # Edit answer
@@ -227,7 +286,7 @@ def edit_answer(ans_id):
     except:
         return 'Error! Please contact the admin!'
 
-    return question_schema.jsonify(answer)
+    return answer_schema.jsonify(answer)
 
 
 # Up vote answer
@@ -237,16 +296,19 @@ def up_vote_answer(ans_id):
 
     user = User.query.get(user_id)
     answer = Answer.query.get(ans_id)
-    is_up_vote = user_up_vote_answer.query.filter_by(
-        user_id=user_id, answer_id=ans_id).first()
+    up_vote_users = answer.up_vote_users.all()
+    down_vote_users = answer.down_vote_users.all()
 
     try:
-        if is_up_vote:
+        if user in up_vote_users:
             answer.dis_vote_up()
             answer.up_vote_users.remove(user)
         else:
-            answer.up_vote()
+            answer.vote_up()
             answer.up_vote_users.append(user)
+            if user in down_vote_users:
+                answer.dis_vote_down()
+                answer.down_vote_users.remove(user)
 
         db.session.commit()
     except:
@@ -262,16 +324,19 @@ def down_vote_answer(ans_id):
 
     user = User.query.get(user_id)
     answer = Answer.query.get(ans_id)
-    is_down_vote = user_down_vote_answer.query.filter_by(
-        user_id=user_id, answer_id=ans_id).first()
+    up_vote_users = answer.up_vote_users.all()
+    down_vote_users = answer.down_vote_users.all()
 
     try:
-        if is_down_vote:
+        if user in down_vote_users:
             answer.dis_vote_down()
             answer.down_vote_users.remove(user)
         else:
-            answer.down_vote()
+            answer.vote_down()
             answer.down_vote_users.append(user)
+            if user in up_vote_users:
+                answer.dis_vote_up()
+                answer.up_vote_users.remove(user)
 
         db.session.commit()
     except:
@@ -315,6 +380,26 @@ def create_tag():
     return tag_schema.jsonify(new_tag)
 
 
+# Get all tags
+@app.route('/tag/all', methods=['GET'])
+def get_all_tags():
+    tags = Tag.query.filter_by(is_deleted=False)
+    result = tags_schema.dump(answer)
+
+    return jsonify(result)
+
+
+# Get tag
+@app.route('/tag/<id>', methods=['GET'])
+def get_tag(id):
+    tag = Tag.query.get(id)
+
+    if tag.is_deleted:
+        return 'This tag was deleted!'
+
+    return tag_schema.jsonify(tag)
+
+
 # Delete tag
 @app.route('/tag/<id>', methods=['DELETE'])
 def delete_tag(id):
@@ -338,6 +423,12 @@ def add_tags(id):
     if question.user_id != user_id:
         return 'You are not the owner of this question!'
 
+    if question.is_deleted:
+        return 'This question was deleted!'
+
+    if question.is_closed:
+        return 'This question was closed!'
+
     tag_ids = request.json['tag_ids']
     tags = Tag.query.filter(Tag.tag_id.in_(tag_ids)).all()
 
@@ -353,4 +444,4 @@ def add_tags(id):
 
 if __name__ == "__main__":
     db.create_all()
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0')

@@ -44,17 +44,17 @@ class User(db.Model):
     user_password = db.Column(db.String(50), nullable=False)
     answers = db.relationship('Question', backref='owner', lazy=True)
     answers = db.relationship('Answer', backref='owner', lazy=True)
-    is_detele = db.Column(db.Boolean, nullable=False)
+    is_deleted = db.Column(db.Boolean, nullable=False)
 
     def __init__(self, name, email, password):
         self.user_id = uuid.uuid4().hex
         self.user_name = name
         self.user_email = email
         self.user_password = password
-        self.is_detele = False
+        self.is_deleted = False
 
-    def detele(self):
-        self.is_detele = True
+    def delete(self):
+        self.is_deleted = True
 
 
 # Question Class/Model
@@ -66,7 +66,7 @@ class Question(db.Model):
     date_public = db.Column(db.DateTime, nullable=False)
     last_update = db.Column(db.DateTime, nullable=False)
     is_closed = db.Column(db.Boolean, nullable=False)
-    is_detele = db.Column(db.Boolean, nullable=False)
+    is_deleted = db.Column(db.Boolean, nullable=False)
     user_id = db.Column(db.String(50), db.ForeignKey(
         'user.user_id'), nullable=False)
     answers = db.relationship('Answer', backref='question', lazy=True)
@@ -86,9 +86,9 @@ class Question(db.Model):
         self.date_public = datetime.now()
         self.last_update = datetime.now()
         self.is_closed = False
-        self.is_detele = False
+        self.is_deleted = False
 
-    def vote_up(self, user_id):
+    def vote_up(self):
         self.up_vote += 1
 
     def dis_vote_up(self):
@@ -104,8 +104,11 @@ class Question(db.Model):
         self.question_content = content
         self.last_update = datetime.now()
 
-    def detele(self):
-        self.is_detele = True
+    def delete(self):
+        self.is_deleted = True
+
+    def close(self):
+        self.is_closed = True
 
     def add_tags(self, tags):
         for tag in tags:
@@ -120,7 +123,7 @@ class Answer(db.Model):
     down_vote = db.Column(db.Integer, nullable=False)
     date_public = db.Column(db.DateTime, nullable=False)
     last_update = db.Column(db.DateTime, nullable=False)
-    is_detele = db.Column(db.Boolean, nullable=False)
+    is_deleted = db.Column(db.Boolean, nullable=False)
     user_id = db.Column(db.String(50), db.ForeignKey(
         'user.user_id'), nullable=False)
     question_id = db.Column(db.String(50), db.ForeignKey(
@@ -139,7 +142,7 @@ class Answer(db.Model):
         self.date_public = datetime.now()
         self.last_update = datetime.now()
         self.question_id = question_id
-        self.is_detele = False
+        self.is_deleted = False
 
     def vote_up(self):
         self.up_vote += 1
@@ -157,20 +160,20 @@ class Answer(db.Model):
         self.answer_content = content
         self.last_update = datetime.now()
 
-    def detele(self):
-        self.is_detele = True
+    def delete(self):
+        self.is_deleted = True
 
 
 # Tag Class/Model
 class Tag(db.Model):
     tag_id = db.Column(db.String(50), primary_key=True)
     tag_name = db.Column(db.String(50), nullable=False, unique=True)
-    is_detele = db.Column(db.Boolean, nullable=False)
+    is_deleted = db.Column(db.Boolean, nullable=False)
 
     def __init__(self, name):
         self.tag_id = uuid.uuid4().hex
         self.tag_name = name
-        self.is_detele = False
+        self.is_deleted = False
 
-    def detele(self):
-        self.is_detele = True
+    def delete(self):
+        self.is_deleted = True

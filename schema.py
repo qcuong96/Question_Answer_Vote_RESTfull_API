@@ -18,7 +18,7 @@ class QuestionSchema(ma.Schema):
 class AnswerSchema(ma.Schema):
     class Meta:
         fields = ('answer_id', 'answer_content', 'up_vote',
-                  'down_vote', 'date_public', 'user_id')
+                  'down_vote', 'date_public', 'user_id', 'question_id')
 
 
 # Tag Schema
