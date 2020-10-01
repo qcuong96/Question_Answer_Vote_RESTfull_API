@@ -35,6 +35,9 @@ def login():
 
     user = User.query.filter_by(user_name=name).first()
 
+    if not user:
+        return "This account have been not registed!!"
+
     if user.is_deleted:
         return 'This user was delete, please contact the admin!'
 
@@ -94,6 +97,9 @@ def get_all_questions():
 def get_question(id):
     question = Question.query.get(id)
 
+    if not question:
+        return 'This question is not existed!'
+
     if question.is_deleted:
         return 'This question was deleted!'
 
@@ -110,6 +116,9 @@ def edit_question(id):
 
     if question.user_id != user_id:
         return 'You are not the owner of this question!'
+
+    if not question:
+        return 'This question is not existed!'
 
     if question.is_deleted:
         return 'This question was deleted!'
@@ -135,6 +144,15 @@ def up_vote_question(id):
     question = Question.query.get(id)
     up_vote_users = question.up_vote_users.all()
     down_vote_users = question.down_vote_users.all()
+
+    if not user:
+        return 'This account have been not registed!'
+
+    if not question:
+        return 'This question is not existed!'
+
+    if question.is_deleted:
+        return 'This question was deleted!'
 
     try:
         if user in up_vote_users:
@@ -164,6 +182,15 @@ def down_vote_question(id):
     up_vote_users = question.up_vote_users.all()
     down_vote_users = question.down_vote_users.all()
 
+    if not user:
+        return 'This account have been not registed!'
+
+    if not question:
+        return 'This question is not existed!'
+
+    if question.is_deleted:
+        return 'This question was deleted!'
+
     try:
         if user in down_vote_users:
             question.dis_vote_down()
@@ -189,6 +216,12 @@ def close_question(id):
 
     question = Question.query.get(id)
 
+    if not question:
+        return 'This question is not existed!'
+
+    if question.is_deleted:
+        return 'This question was deleted!'
+
     if question.user_id != user_id:
         return 'You are not the owner of this question!'
 
@@ -207,6 +240,12 @@ def delete_question(id):
     user_id = request.json['user_id']
 
     question = Question.query.get(id)
+
+    if not question:
+        return 'This question is not existed!'
+
+    if question.is_deleted:
+        return 'This question was deleted!'
 
     if question.user_id != user_id:
         return 'You are not the owner of this question!'
@@ -228,6 +267,9 @@ def create_answer(id):
 
     user = User.query.filter_by(user_id=user_id).first()
     question = Question.query.get(id)
+
+    if not question:
+        return 'This question is not existed!'
 
     if question.is_deleted:
         return 'This question was deleted!'
@@ -252,6 +294,14 @@ def create_answer(id):
 # Get all answers of the question
 @app.route('/question/<id>/answers', methods=['GET'])
 def get_all_answers(id):
+    question = Question.query.get(id)
+
+    if not question:
+        return 'This question is not existed!'
+
+    if question.is_deleted:
+        return 'This question was deleted!'
+
     answer = Answer.query.filter_by(question_id=id, is_deleted=False)
     result = answers_schema.dump(answer)
 
@@ -262,6 +312,9 @@ def get_all_answers(id):
 @app.route('/answer/<ans_id>', methods=['GET'])
 def get_answer(ans_id):
     answer = Answer.query.get(ans_id)
+
+    if not answer:
+        return 'This answer is not existed!'
 
     if answer.is_deleted:
         return 'This answer was delete!'
@@ -276,6 +329,12 @@ def edit_answer(ans_id):
     user_id = request.json['user_id']
 
     answer = Answer.query.get(ans_id)
+
+    if not answer:
+        return 'This answer is not existed!'
+
+    if answer.is_deleted:
+        return 'This answer was delete!'
 
     if answer.user_id != user_id:
         return 'You are not the owner of this question!'
@@ -298,6 +357,15 @@ def up_vote_answer(ans_id):
     answer = Answer.query.get(ans_id)
     up_vote_users = answer.up_vote_users.all()
     down_vote_users = answer.down_vote_users.all()
+
+    if not user:
+        return 'This account have been not registed!'
+
+    if not answer:
+        return 'This answer is not existed!'
+
+    if answer.is_deleted:
+        return 'This answer was delete!'
 
     try:
         if user in up_vote_users:
@@ -326,6 +394,15 @@ def down_vote_answer(ans_id):
     answer = Answer.query.get(ans_id)
     up_vote_users = answer.up_vote_users.all()
     down_vote_users = answer.down_vote_users.all()
+
+    if not user:
+        return 'This account have been not registed!'
+
+    if not answer:
+        return 'This answer is not existed!'
+
+    if answer.is_deleted:
+        return 'This answer was delete!'
 
     try:
         if user in down_vote_users:
@@ -380,6 +457,22 @@ def create_tag():
     return tag_schema.jsonify(new_tag)
 
 
+# Edit tag
+@app.route('/tag/<id>', methods=['PUT'])
+def edit_tag(id):
+    tag = Tag.query.get(id)
+    new_tag_name = request.json['tag_name']
+
+    tag.edit(new_tag_name)
+
+    try:
+        db.session.commit()
+    except:
+        return 'Error! Please contact the admin!'
+
+    return tag_schema.jsonify(tag)
+
+
 # Get all tags
 @app.route('/tag/all', methods=['GET'])
 def get_all_tags():
@@ -417,7 +510,7 @@ def delete_tag(id):
 # Add tags into question
 @app.route('/question/<id>/tags', methods=['PUT'])
 def add_tags(id):
-    user_id = request.json['user_id']
+    tag_ids = request.json['tag_ids']
     question = Question.query.get(id)
 
     if question.user_id != user_id:

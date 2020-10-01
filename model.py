@@ -177,3 +177,6 @@ class Tag(db.Model):
 
     def delete(self):
         self.is_deleted = True
+    
+    def edit(self, new_tag_name):
+        self.tag_name = new_tag_name
