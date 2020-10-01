@@ -10,7 +10,7 @@ from schema import user_schema, users_schema
 
 
 # Register
-@app.route('/register', methods=['POST'])
+@app.route('/user/register', methods=['POST'])
 def register():
     name = request.json['username']
     email = request.json['email']
@@ -28,7 +28,7 @@ def register():
 
 
 # Login
-@app.route('/user', methods=['POST'])
+@app.route('/user/login', methods=['POST'])
 def login():
     name = request.json['username']
     password = request.json['password']
